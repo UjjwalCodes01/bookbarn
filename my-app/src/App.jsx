@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from "react";
 import "./App.css";
 import { motion, AnimatePresence } from 'framer-motion';
-import { v4 as uuidv4 } from "uuid";
 import { ThemeProvider, useTheme } from './context/ThemeContext';
 import ParticlesBackground from './components/ParticlesBackground';
 import Header from './components/Header';
@@ -9,8 +8,10 @@ import BookCard from './components/BookCard';
 import AddBookModal from './components/AddBookModal';
 import ConfirmDeleteModal from './components/ConfirmDeleteModal';
 import ToastContainer from './components/ToastContainer';
+import LoadingSpinner from './components/LoadingSpinner';
 import { useBookSearch } from './hooks/useBookSearch';
 import { useToast } from './hooks/useToast';
+import BookAPI from './services/bookAPI';
 
 // Sample book data with more realistic information
 const sampleBooks = [
@@ -50,7 +51,8 @@ const sampleBooks = [
 
 const AppContent = () => {
   const { colors } = useTheme();
-  const [books, setBooks] = useState(sampleBooks);
+  const [books, setBooks] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [deleteModal, setDeleteModal] = useState({ isOpen: false, book: null });
   const [currentFilter, setCurrentFilter] = useState('all');
@@ -63,6 +65,29 @@ const AppContent = () => {
   } = useBookSearch(books);
   
   const { toasts, removeToast, showSuccess, showError, showInfo } = useToast();
+
+  // Load books from database on component mount
+  useEffect(() => {
+    loadBooks();
+  }, []);
+
+  const loadBooks = async () => {
+    try {
+      setLoading(true);
+      console.log('Attempting to load books from database...');
+      const booksData = await BookAPI.getAllBooks();
+      setBooks(booksData);
+      console.log('Books loaded from database:', booksData);
+    } catch (error) {
+      console.error('Error loading books:', error);
+      showError('Database Connection', 'Using offline mode - database connection failed');
+      // Fall back to sample data if database fails
+      setBooks(sampleBooks);
+      console.log('Falling back to sample data');
+    } finally {
+      setLoading(false);
+    }
+  };
   
   // Helper functions
   const openModal = () => setIsModalOpen(true);
@@ -97,55 +122,121 @@ const AppContent = () => {
 
   const counts = getCounts();
 
-  // Simple book management functions
-  const addBook = (bookData) => {
-    if (bookData) {
+  // Book management functions with database integration
+  const addBook = async (bookData) => {
+    try {
+      console.log('Adding book:', bookData);
+      const newBook = await BookAPI.createBook({
+        ...bookData,
+        status: bookData.status || 'want-to-read',
+        dateAdded: new Date()
+      });
+      
+      // Update local state
+      setBooks(prev => [newBook, ...prev]);
+      showSuccess('Book Added', `"${bookData.title}" has been added to your library!`);
+      console.log('Book added to database:', newBook);
+    } catch (error) {
+      console.error('Error adding book:', error);
+      // Fallback to local storage
       const newBook = {
+        _id: Date.now().toString(),
+        id: Date.now().toString(),
         ...bookData,
         status: bookData.status || 'want-to-read',
         dateAdded: new Date()
       };
-      setBooks(prev => [...prev, newBook]);
-      showSuccess('Book Added', `"${bookData.title}" has been added to your library!`);
+      setBooks(prev => [newBook, ...prev]);
+      showSuccess('Book Added (Offline)', `"${bookData.title}" has been added locally!`);
     }
   };
 
-  const deleteBook = (id) => {
-    const book = books.find(b => b.id === id);
+  const deleteBook = async (id) => {
+    const book = books.find(b => b._id === id || b.id === id);
     if (book) {
-      setBooks(prev => prev.filter(book => book.id !== id));
-      showSuccess('Book Deleted', `"${book.title}" has been removed from your library.`);
+      setDeleteModal({ isOpen: true, book });
     }
   };
 
-  const readBook = (id) => {
-    const book = books.find(b => b.id === id);
+  const confirmDelete = async () => {
+    if (deleteModal.book) {
+      try {
+        await BookAPI.deleteBook(deleteModal.book._id || deleteModal.book.id);
+        
+        // Update local state
+        setBooks(prev => prev.filter(book => 
+          (book._id !== deleteModal.book._id) && (book.id !== deleteModal.book.id)
+        ));
+        showSuccess('Book Deleted', `"${deleteModal.book.title}" has been removed from your library.`);
+        console.log('Book deleted from database:', deleteModal.book._id || deleteModal.book.id);
+      } catch (error) {
+        console.error('Error deleting book:', error);
+        // Fallback to local deletion
+        setBooks(prev => prev.filter(book => 
+          (book._id !== deleteModal.book._id) && (book.id !== deleteModal.book.id)
+        ));
+        showSuccess('Book Deleted (Offline)', `"${deleteModal.book.title}" has been removed locally.`);
+      } finally {
+        setDeleteModal({ isOpen: false, book: null });
+      }
+    }
+  };
+
+  const readBook = async (id) => {
+    const book = books.find(b => b._id === id || b.id === id);
     if (book) {
       let newStatus = book.status;
       let message = '';
+      let updateData = {};
       
       if (book.status === 'want-to-read') {
         newStatus = 'currently-reading';
         message = `Started reading "${book.title}"! Happy reading! 📖`;
+        updateData = { 
+          status: newStatus, 
+          dateStarted: new Date() 
+        };
       } else if (book.status === 'currently-reading') {
         newStatus = 'read';
         message = `Congratulations! You finished "${book.title}"! 🎉`;
+        updateData = { 
+          status: newStatus, 
+          dateRead: new Date() 
+        };
       } else {
+        newStatus = 'currently-reading';
         message = `Re-reading "${book.title}"? Great choice! 📚`;
+        updateData = { 
+          status: newStatus, 
+          dateStarted: new Date() 
+        };
       }
       
-      setBooks(prev => prev.map(b => 
-        b.id === id 
-          ? { 
-              ...b, 
-              status: newStatus,
-              dateStarted: newStatus === 'currently-reading' ? new Date() : b.dateStarted,
-              dateRead: newStatus === 'read' ? new Date() : b.dateRead
-            }
-          : b
-      ));
-      
-      showSuccess('Status Updated', message);
+      try {
+        const updatedBook = await BookAPI.updateBook(book._id || book.id, updateData);
+        
+        // Update local state
+        setBooks(prev => prev.map(b => 
+          (b._id === id || b.id === id) ? updatedBook : b
+        ));
+        
+        showSuccess('Status Updated', message);
+        console.log('Book status updated in database:', updatedBook);
+      } catch (error) {
+        console.error('Error updating book:', error);
+        // Fallback to local update
+        setBooks(prev => prev.map(b => 
+          (b._id === id || b.id === id) 
+            ? { 
+                ...b, 
+                status: newStatus,
+                dateStarted: newStatus === 'currently-reading' ? new Date() : b.dateStarted,
+                dateRead: newStatus === 'read' ? new Date() : b.dateRead
+              }
+            : b
+        ));
+        showSuccess('Status Updated (Offline)', message);
+      }
     }
   };
   
@@ -154,6 +245,13 @@ const AppContent = () => {
       className="min-h-screen relative overflow-hidden theme-transition"
       style={{ backgroundColor: colors.background }}
     >
+      {/* Loading Screen */}
+      {loading && (
+        <div className="absolute inset-0 z-50 flex items-center justify-center">
+          <LoadingSpinner />
+        </div>
+      )}
+
       {/* ParticlesBackground */}
       <ParticlesBackground />
       
@@ -283,7 +381,7 @@ const AppContent = () => {
                 <AnimatePresence mode="popLayout">
                   {displayedBooks.map((book) => (
                     <BookCard
-                      key={book.id}
+                      key={book._id || book.id}
                       book={book}
                       onDelete={deleteBook}
                       onRead={readBook}
@@ -336,6 +434,14 @@ const AppContent = () => {
           isOpen={isModalOpen}
           onClose={closeModal}
           onAdd={addBook}
+        />
+
+        {/* Delete Confirmation Modal */}
+        <ConfirmDeleteModal
+          isOpen={deleteModal.isOpen}
+          book={deleteModal.book}
+          onConfirm={confirmDelete}
+          onClose={() => setDeleteModal({ isOpen: false, book: null })}
         />
 
         {/* Toast Notifications */}

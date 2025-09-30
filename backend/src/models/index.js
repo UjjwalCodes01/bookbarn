@@ -1,22 +1,44 @@
 const Mongoose = require("mongoose");
 const {Schema} = Mongoose;
 
-const schema = new Schema({
-  title : {
+const bookSchema = new Schema({
+  title: {
     type: String,
-    require: true
+    required: true
   },
   author: {
-    type : String,
-    require: true
-  },
-  imgurl: {
     type: String,
-    require: true
+    required: true
+  },
+  genre: {
+    type: String,
+    default: ''
+  },
+  coverImage: {
+    type: String,
+    default: ''
+  },
+  description: {
+    type: String,
+    default: ''
+  },
+  status: {
+    type: String,
+    enum: ['want-to-read', 'currently-reading', 'read'],
+    default: 'want-to-read'
+  },
+  dateAdded: {
+    type: Date,
+    default: Date.now
+  },
+  dateStarted: {
+    type: Date
+  },
+  dateRead: {
+    type: Date
   }
-},{timestamps: true});
+}, {timestamps: true});
 
+const Book = Mongoose.model("book", bookSchema);
 
-const user = Mongoose.model("book", schema);
-
-module.exports ={user};
+module.exports = {Book};

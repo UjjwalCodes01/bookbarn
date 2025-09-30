@@ -149,7 +149,7 @@ const BookCard = ({ book, onDelete, onRead }) => {
             <motion.button
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
-              onClick={() => onRead(book.id)}
+                            onClick={() => onRead(book._id || book.id)}
               className="flex items-center gap-2 px-4 py-2 rounded-lg font-medium text-white transition-all duration-300 flex-1"
               style={{ backgroundColor: currentStatus.buttonColor }}
             >
@@ -160,7 +160,7 @@ const BookCard = ({ book, onDelete, onRead }) => {
             <motion.button
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
-              onClick={() => onDelete(book.id)}
+              onClick={() => onDelete(book._id || book.id)}
               className="flex items-center gap-2 px-4 py-2 rounded-lg font-medium text-white transition-all duration-300"
               style={{ backgroundColor: '#EF4444' }}
             >
