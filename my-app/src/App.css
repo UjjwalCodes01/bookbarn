@@ -1,0 +1,246 @@
+/* Component-specific styles for App */
+@layer components {
+  /* Header Layout Fixes */
+  .header-container {
+    min-height: 60px;
+    width: 100%;
+  }
+  
+  .header-content {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    flex-wrap: nowrap;
+  }
+  
+  .header-logo {
+    flex-shrink: 0;
+    min-width: fit-content;
+  }
+  
+  .header-nav {
+    flex: 1;
+    display: flex;
+    justify-content: center;
+  }
+  
+  .header-actions {
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+  }
+
+  /* Button fixes */
+  .add-book-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    padding: 0.5rem 1rem;
+    border-radius: 0.5rem;
+    font-weight: 500;
+    transition: all 0.3s ease;
+    white-space: nowrap;
+    border: none;
+    cursor: pointer;
+  }
+  
+  .add-book-btn:hover {
+    transform: scale(1.05);
+  }
+  
+  .add-book-btn:active {
+    transform: scale(0.95);
+  }
+
+  /* Custom Scrollbar Styles for containers */
+  .scroll-container {
+    -ms-overflow-style: none;  /* Hides scrollbar in Internet Explorer and Edge */
+    scrollbar-width: none;     /* Hides scrollbar in Firefox */
+  }
+
+  /* Hides scrollbar in Chrome, Safari, and Opera */
+  .scroll-container::-webkit-scrollbar {
+    display: none;
+  }
+
+  /* Line clamp utility */
+  .line-clamp-2 {
+    overflow: hidden;
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+    line-clamp: 2;
+  }
+
+  /* Glass morphism effect for modern UI */
+  .glass {
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+  }
+
+  /* Hover effects */
+  .hover-lift:hover {
+    transform: translateY(-4px);
+  }
+
+  /* Gradient text effect */
+  .gradient-text {
+    background: linear-gradient(45deg, #00ADB5, #9B5DE5, #3A86FF);
+    background-size: 200% 200%;
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    animation: gradient 3s ease infinite;
+  }
+
+  /* Loading animation */
+  .loading-shimmer {
+    background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+    background-size: 200% 100%;
+    animation: shimmer 2s infinite;
+  }
+}
+
+/* Keyframes for animations */
+@keyframes gradient {
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+/* Utilities layer for layout fixes */
+@layer utilities {
+  /* Particle canvas positioning - Fixed z-index conflicts */
+  #tsparticles {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: -10; /* Moved further back */
+    pointer-events: none; /* Prevent interaction issues */
+  }
+
+  /* Smooth transitions for theme changes */
+  .theme-transition * {
+    transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease;
+  }
+
+  /* Focus styles override */
+  .focus-override:focus {
+    outline: none;
+  }
+  
+  /* Header fixes */
+  .header-sticky {
+    position: sticky;
+    top: 0;
+    z-index: 40;
+    width: 100%;
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+  }
+  
+  /* Container max width fixes */
+  .container-fixed {
+    width: 100%;
+    max-width: 1280px;
+    margin-left: auto;
+    margin-right: auto;
+    padding-left: 1rem;
+    padding-right: 1rem;
+  }
+}
+
+/* Media queries for responsive fixes */
+@media (max-width: 768px) {
+  .container-fixed {
+    padding-left: 1rem;
+    padding-right: 1rem;
+  }
+  
+  /* Hide desktop navigation on mobile */
+  .desktop-nav {
+    display: none;
+  }
+  
+  /* Adjust header spacing on mobile */
+  .header-content {
+    gap: 0.5rem;
+  }
+  
+  /* Mobile button adjustments */
+  .add-book-btn {
+    padding: 0.375rem 0.75rem;
+    font-size: 0.875rem;
+  }
+  
+  /* Reduce particle performance impact on mobile */
+  #tsparticles {
+    display: none;
+  }
+}
+
+@media (min-width: 769px) {
+  .mobile-nav {
+    display: none;
+  }
+}
+
+@media (max-width: 1024px) {
+  .header-nav {
+    display: none;
+  }
+  
+  .desktop-nav {
+    display: none;
+  }
+}
+
+/* Print styles */
+@media print {
+  #tsparticles,
+  .no-print {
+    display: none !important;
+  }
+}
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+  * {
+    border-width: 2px !important;
+  }
+}
+
+/* Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+  
+  #tsparticles {
+    display: none;
+  }
+}
