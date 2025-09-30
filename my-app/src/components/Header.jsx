@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
-import { Search, Sun, Moon, Menu, X, Plus, BookOpen } from 'lucide-react';
+import { Search, Sun, Moon, Menu, X, Plus, BookOpen, RefreshCw } from 'lucide-react';
 import { useTheme } from '../context/ThemeContext';
 
-const Header = ({ onAddBook, onSearch, searchQuery, onFilterChange, currentFilter }) => {
+const Header = ({ onAddBook, onSearch, searchQuery, onFilterChange, currentFilter, onRefresh }) => {
   const { colors, isDark, toggleTheme } = useTheme();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isFocused, setIsFocused] = useState(false);
@@ -162,6 +162,21 @@ const Header = ({ onAddBook, onSearch, searchQuery, onFilterChange, currentFilte
                 ) : (
                   <Moon size={18} style={{ color: colors.accent }} />
                 )}
+              </motion.button>
+
+              {/* Refresh Button */}
+              <motion.button
+                whileHover={{ scale: 1.1 }}
+                whileTap={{ scale: 0.9 }}
+                onClick={onRefresh}
+                className="p-2 rounded-lg transition-all duration-300"
+                style={{ 
+                  backgroundColor: colors.surfaceLight,
+                  border: `1px solid ${colors.border}`
+                }}
+                title="Refresh Books"
+              >
+                <RefreshCw size={18} style={{ color: colors.accent }} />
               </motion.button>
 
               {/* Add Book Button */}

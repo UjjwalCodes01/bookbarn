@@ -77,13 +77,26 @@ const AppContent = () => {
       console.log('Attempting to load books from database...');
       const booksData = await BookAPI.getAllBooks();
       setBooks(booksData);
-      console.log('Books loaded from database:', booksData);
+      console.log('✅ Books loaded from database:');
+      console.log('📊 Total books found:', booksData.length);
+      console.log('📚 Book details:', booksData);
+      
+      // Log each book individually for clarity
+      booksData.forEach((book, index) => {
+        console.log(`📖 Book ${index + 1}:`, {
+          id: book._id || book.id,
+          title: book.title,
+          author: book.author,
+          status: book.status,
+          dateAdded: book.dateAdded
+        });
+      });
     } catch (error) {
-      console.error('Error loading books:', error);
+      console.error('❌ Error loading books:', error);
       showError('Database Connection', 'Using offline mode - database connection failed');
       // Fall back to sample data if database fails
       setBooks(sampleBooks);
-      console.log('Falling back to sample data');
+      console.log('🔄 Falling back to sample data');
     } finally {
       setLoading(false);
     }
@@ -132,10 +145,12 @@ const AppContent = () => {
         dateAdded: new Date()
       });
       
-      // Update local state
-      setBooks(prev => [newBook, ...prev]);
+      console.log('Book added to database, refreshing data...');
+      // Refresh the entire book list from database
+      await loadBooks();
+      
       showSuccess('Book Added', `"${bookData.title}" has been added to your library!`);
-      console.log('Book added to database:', newBook);
+      console.log('Book added and data refreshed:', newBook);
     } catch (error) {
       console.error('Error adding book:', error);
       // Fallback to local storage
@@ -163,12 +178,12 @@ const AppContent = () => {
       try {
         await BookAPI.deleteBook(deleteModal.book._id || deleteModal.book.id);
         
-        // Update local state
-        setBooks(prev => prev.filter(book => 
-          (book._id !== deleteModal.book._id) && (book.id !== deleteModal.book.id)
-        ));
+        console.log('Book deleted from database, refreshing data...');
+        // Refresh the entire book list from database
+        await loadBooks();
+        
         showSuccess('Book Deleted', `"${deleteModal.book.title}" has been removed from your library.`);
-        console.log('Book deleted from database:', deleteModal.book._id || deleteModal.book.id);
+        console.log('Book deleted and data refreshed:', deleteModal.book._id || deleteModal.book.id);
       } catch (error) {
         console.error('Error deleting book:', error);
         // Fallback to local deletion
@@ -215,13 +230,12 @@ const AppContent = () => {
       try {
         const updatedBook = await BookAPI.updateBook(book._id || book.id, updateData);
         
-        // Update local state
-        setBooks(prev => prev.map(b => 
-          (b._id === id || b.id === id) ? updatedBook : b
-        ));
+        console.log('Book status updated in database, refreshing data...');
+        // Refresh the entire book list from database
+        await loadBooks();
         
         showSuccess('Status Updated', message);
-        console.log('Book status updated in database:', updatedBook);
+        console.log('Book status updated and data refreshed:', updatedBook);
       } catch (error) {
         console.error('Error updating book:', error);
         // Fallback to local update
@@ -264,6 +278,7 @@ const AppContent = () => {
           searchQuery={searchQuery}
           onFilterChange={handleFilterChange}
           currentFilter={currentFilter}
+          onRefresh={loadBooks}
         />
         
         {/* Main Content */}
